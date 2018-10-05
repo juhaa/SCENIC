@@ -71,6 +71,11 @@ tsneAUC <- function(scenicOptions, aucType=NULL, nPcs=NULL, perpl=NULL, filePref
         tsneMat <- mat4tsne_subset
         if(aucType=="Binary") tsneMat <- jitter(tsneMat, factor=1)
         tsneMat <- unique(t(tsneMat))
+        
+        if(nrow(tsneMat) - 1 < 3 * perplexity) {
+          perplexity <- floor((nrow(tsneMat) - 1) / 3)
+          warning(paste("Perplexity too small. Setting perplexity to", perplexity))
+        }
   
         tsneAUC <- Rtsne::Rtsne(tsneMat,
                                 initial_dims=as.integer(initial_dims),
