@@ -6,6 +6,7 @@
 #' @title runSCENIC_2_createRegulons
 #' @description Step 2: RcisTarget (prune co-expression modules using TF-motif enrichment analysis)
 #' @param scenicOptions Fields used: TODO
+#' @param htmlPreview Whether to save HTML preview
 #' @return The output is written in the folders 'int' and 'ouput'
 #' @details See the detailed vignette explaining the internal steps.
 #' @examples 
@@ -16,7 +17,7 @@
 #' 
 #' runSCENIC_2_createRegulons(scenicOptions)
 #' @export
-runSCENIC_2_createRegulons <- function(scenicOptions)
+runSCENIC_2_createRegulons <- function(scenicOptions, htmlPreview = FALSE)
 {
   tfModules_asDF <- loadInt(scenicOptions, "tfModules_asDF")
   nCores <- getSettings(scenicOptions, "nCores")
@@ -150,7 +151,7 @@ runSCENIC_2_createRegulons <- function(scenicOptions)
   if(!file.exists("output")) dir.create("output") 
   write.table(motifEnrichment_selfMotifs_wGenes, file=getOutName(scenicOptions, "s2_motifEnrichment"),
               sep="\t", quote=FALSE, row.names=FALSE)
-  if("DT" %in% installed.packages() && nrow(motifEnrichment_selfMotifs_wGenes)>0)
+  if("DT" %in% installed.packages() && nrow(motifEnrichment_selfMotifs_wGenes)>0 && htmlPreview)
   {
     nvm <- tryCatch({
       motifEnrichment_2html <- RcisTarget::addLogo(motifEnrichment_selfMotifs_wGenes)
