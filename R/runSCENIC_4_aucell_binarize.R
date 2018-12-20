@@ -4,13 +4,15 @@
 #' @param skipBoxplot Whether to plot the boxplots
 #' @param skipHeatmaps Whether to plot the Binary heatmaps
 #' @param skipTsne Whether to calculate the binary t-SNE
-#' @param exprMat If skipTsne = FALSE, need expression matrix of data.
+#' @param exprMat If skipTsne = FALSE, need expression matrix of data
+#' @param dropZeroCells Whether to drop cells that are zero for all regulons
+#' @param dropZeroRegulons Whether to drop regulons that are zero for all cells
 #' @return The output is written in the folders 'int' and 'ouput'
 #' @details See the detailed vignette explaining the internal steps.
 #' @examples 
 #' runSCENIC_4_aucell_binarize(scenicOptions)
 #' @export
-runSCENIC_4_aucell_binarize <- function(scenicOptions, skipBoxplot=FALSE, skipHeatmaps=FALSE, skipTsne=FALSE, exprMat)
+runSCENIC_4_aucell_binarize <- function(scenicOptions, skipBoxplot=FALSE, skipHeatmaps=FALSE, skipTsne=FALSE, exprMat, dropZeroCells=TRUE, dropZeroRegulons=TRUE)
 {
   nCores <- getSettings(scenicOptions, "nCores")
   regulonAUC <- loadInt(scenicOptions, "aucell_regulonAUC")
@@ -18,15 +20,10 @@ runSCENIC_4_aucell_binarize <- function(scenicOptions, skipBoxplot=FALSE, skipHe
   thresholds <- getThresholdSelected(thresholds)
   
   # Assign cells
-  regulonsCells <- setNames(lapply(names(thresholds), 
-                                   function(x) {
-                                     trh <- thresholds[x]
-                                     names(which(getAUC(regulonAUC)[x,]>trh))
-                                   }),names(thresholds))
-  ### Convert to matrix (regulons with zero assigned cells are lost)
-  regulonActivity <- reshape2::melt(regulonsCells)
-  binaryRegulonActivity <- t(table(regulonActivity[,1], regulonActivity[,2]))
-  class(binaryRegulonActivity) <- "matrix"
+  binaryRegulonActivity <- apply(getAUC(regulonAUC), 2, function(x) { ifelse(x > thresholds, 1, 0) })
+  binaryRegulonActivity <- binaryRegulonActivity[order(rownames(binaryRegulonActivity)), ]
+  if(dropZeroCells) binaryRegulonActivity <- binaryRegulonActivity[, colSums(binaryRegulonActivity)>0, drop=FALSE]
+  if(dropZeroRegulons) binaryRegulonActivity <- binaryRegulonActivity[rowSums(binaryRegulonActivity)>0, , drop=FALSE]
   saveRDS(binaryRegulonActivity, file=getIntName(scenicOptions, "aucell_binary_full"))
   
   # Keep only non-duplicated thresholds
